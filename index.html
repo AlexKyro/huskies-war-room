@@ -1064,7 +1064,9 @@ var PASS_PACK={"SMU":{"g":7,"pl":441,"spp":30.4,"tgTot":160,"O":{"pl":441,"pa":{
     var ppi=(ht&&wt)?wt/ht:null;
     var hs=ht?band(ht,P.htBand[0],P.htBand[1],P.htTol):null;
     var ws=ppi?band(ppi,P.ppi[0],P.ppi[1],P.ppiTol):null;
-    var fr=(hs!==null&&ws!==null)?(hs+ws)/2:null;
+    /* Some schools (Guelph, Ottawa) publish height but no weight. Height
+       alone is still a frame read — weaker, so it leans on the other legs. */
+    var fr=(hs!==null&&ws!==null)?(hs+ws)/2:(hs!==null?hs:null);
     var ps=prodScore(tk,name,pk);
     var im=impactOf(tk,name);
     var legs=[], wts=[];
@@ -1633,6 +1635,9 @@ var PASS_PACK={"SMU":{"g":7,"pl":441,"spp":30.4,"tgTot":160,"O":{"pl":441,"pa":{
              d.wt+' ('+(dl>0?"+":"")+dl+')</span><br>'+
            'DENSITY <span class="v">'+(d.wt/d.ht).toFixed(2)+' lb/in</span> · band <b>'+
              P.ppi[0].toFixed(2)+'–'+P.ppi[1].toFixed(2)+'</b>';
+    } else if(d.ht){
+      html='POS <b>'+P.label+'</b> &nbsp; FRAME <span class="v">'+esc(d.row[4])+'"</span> · '+
+           '<span class="none">this school does not publish weights — height graded, weight off film.</span>';
     } else {
       html='POS <b>'+P.label+'</b><br><span class="none">No height / weight published for this roster — '+
            'grade the frame off film. Production and play-by-play impact still score.</span>';
@@ -1970,8 +1975,17 @@ var PASS_PACK={"SMU":{"g":7,"pl":441,"spp":30.4,"tgTot":160,"O":{"pl":441,"pa":{
     drawMatch();
   }
 
-  function onUs(){ seedPair(); renderAll(); }
-  function onOpp(){ seedPair(); renderAll(); }
+  /* Same team on both sides is not a matchup. If a coach picks the team
+     already on the other side, swap them so he sees it from the other bench. */
+  var LASTPICK={us:"SMU",opp:"STFX"};
+  function onUs(){
+    if($("usTeam").value===$("oppTeam").value) $("oppTeam").value=LASTPICK.us;
+    LASTPICK={us:$("usTeam").value,opp:$("oppTeam").value};
+    seedPair(); renderAll(); }
+  function onOpp(){
+    if($("oppTeam").value===$("usTeam").value) $("usTeam").value=LASTPICK.opp;
+    LASTPICK={us:$("usTeam").value,opp:$("oppTeam").value};
+    seedPair(); renderAll(); }
   $("usTeam").addEventListener("change",onUs);
   $("oppTeam").addEventListener("change",onOpp);
   $("usPlayer").addEventListener("change",function(){ S.us.talAuto=true; drawMatch(); });
